@@ -1,7 +1,8 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { AppRole } from "@/types/database";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
           .eq("user_id", user.id)
           .limit(1);
 
-        let role = existingRoles?.[0]?.role;
+        let role: AppRole | undefined = existingRoles?.[0]?.role;
 
         if (!existingRoles || existingRoles.length === 0) {
           role = tipo === "profissional" ? "professional" : "client";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
             full_name: fullName,
             display_name: fullName,
             avatar_url: user.user_metadata?.avatar_url || null,
-            status: "active",
+            status: "active" as const,
           });
         }
 

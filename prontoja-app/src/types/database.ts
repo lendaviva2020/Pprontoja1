@@ -1,66 +1,140 @@
-export type AppRole = "client" | "professional" | "org_admin" | "org_member" | "platform_admin";
+export type AppRole = "client" | "professional" | "org_admin" | "org_member" | "platform_admin" | "admin" | "super_admin" | "finance";
 export type JobStatus = "draft" | "open" | "matching" | "proposal_received" | "accepted" | "in_progress" | "pending_review" | "completed" | "disputed" | "cancelled";
 export type ProposalStatus = "pending" | "accepted" | "rejected" | "expired" | "withdrawn";
-export type PaymentStatus = "pending" | "authorized" | "captured" | "released_to_professional" | "refunded" | "disputed";
+export type PaymentStatus = "pending" | "authorized" | "captured" | "released_to_professional" | "refunded" | "partially_refunded" | "disputed" | "failed";
 export type UserStatus = "pending_verification" | "active" | "suspended" | "deactivated";
+export type DisputeStatus = "open" | "under_review" | "resolved_pro_platform" | "resolved_pro_client" | "closed";
 
-export interface Database {
+type Rel = {
+  foreignKeyName: string;
+  columns: string[];
+  isOneToOne?: boolean;
+  referencedRelation: string;
+  referencedColumns: string[];
+}[];
+
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: Profile;
         Insert: Partial<Profile>;
         Update: Partial<Profile>;
+        Relationships: Rel;
       };
       jobs: {
         Row: Job;
         Insert: Partial<Job>;
         Update: Partial<Job>;
+        Relationships: Rel;
       };
       proposals: {
         Row: Proposal;
         Insert: Partial<Proposal>;
         Update: Partial<Proposal>;
+        Relationships: Rel;
       };
       payments: {
         Row: Payment;
         Insert: Partial<Payment>;
         Update: Partial<Payment>;
+        Relationships: Rel;
       };
       services_catalog: {
         Row: ServiceCatalog;
         Insert: Partial<ServiceCatalog>;
         Update: Partial<ServiceCatalog>;
+        Relationships: Rel;
       };
       notifications: {
         Row: Notification;
         Insert: Partial<Notification>;
         Update: Partial<Notification>;
+        Relationships: Rel;
       };
       messages: {
         Row: Message;
         Insert: Partial<Message>;
         Update: Partial<Message>;
+        Relationships: Rel;
       };
       reviews: {
         Row: Review;
         Insert: Partial<Review>;
         Update: Partial<Review>;
+        Relationships: Rel;
       };
       user_roles: {
         Row: UserRole;
         Insert: Partial<UserRole>;
         Update: Partial<UserRole>;
+        Relationships: Rel;
+      };
+      professional_certificates: {
+        Row: ProfessionalCertificate;
+        Insert: Partial<ProfessionalCertificate>;
+        Update: Partial<ProfessionalCertificate>;
+        Relationships: Rel;
+      };
+      professional_portfolio: {
+        Row: ProfessionalPortfolio;
+        Insert: Partial<ProfessionalPortfolio>;
+        Update: Partial<ProfessionalPortfolio>;
+        Relationships: Rel;
+      };
+      professional_skills: {
+        Row: ProfessionalSkill;
+        Insert: Partial<ProfessionalSkill>;
+        Update: Partial<ProfessionalSkill>;
+        Relationships: Rel;
+      };
+      disputes: {
+        Row: Dispute;
+        Insert: Partial<Dispute>;
+        Update: Partial<Dispute>;
+        Relationships: Rel;
+      };
+      typing_indicators: {
+        Row: TypingIndicator;
+        Insert: Partial<TypingIndicator>;
+        Update: Partial<TypingIndicator>;
+        Relationships: Rel;
+      };
+      audit_logs: {
+        Row: AuditLog;
+        Insert: Partial<AuditLog>;
+        Update: Partial<AuditLog>;
+        Relationships: Rel;
+      };
+      webhook_events: {
+        Row: WebhookEvent;
+        Insert: Partial<WebhookEvent>;
+        Update: Partial<WebhookEvent>;
+        Relationships: Rel;
       };
     };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
-export interface Profile {
+export type Profile = {
   id: string;
   organization_id: string | null;
   status: UserStatus;
+  user_status: UserStatus;
   full_name: string;
+  email: string | null;
   display_name: string | null;
   avatar_url: string | null;
   phone_masked: string | null;
@@ -68,9 +142,12 @@ export interface Profile {
   cpf_masked: string | null;
   cpf_hash: string | null;
   bio: string | null;
+  headline: string | null;
+  slug: string | null;
   skills: string[] | null;
   service_radius_km: number | null;
   hourly_rate_cents: number | null;
+  years_experience: number | null;
   rating_avg: number | null;
   rating_count: number | null;
   is_available: boolean | null;
@@ -78,14 +155,18 @@ export interface Profile {
   location_lng: number | null;
   location_city: string | null;
   location_state: string | null;
+  website_url: string | null;
+  linkedin_url: string | null;
+  instagram_url: string | null;
+  profile_completeness: number | null;
   lgpd_consented_at: string | null;
   onboarding_completed: boolean | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Job {
+export type Job = {
   id: string;
   organization_id: string | null;
   client_id: string;
@@ -109,7 +190,7 @@ export interface Job {
   platform_fee_pct: number | null;
   platform_fee_cents: number | null;
   professional_payout_cents: number | null;
-  payment_status: PaymentStatus | null;
+  payment_status: PaymentStatus | string | null;
   payment_intent_id: string | null;
   photos_urls: string[] | null;
   client_rating: number | null;
@@ -122,9 +203,9 @@ export interface Job {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Proposal {
+export type Proposal = {
   id: string;
   job_id: string;
   professional_id: string;
@@ -139,9 +220,9 @@ export interface Proposal {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Payment {
+export type Payment = {
   id: string;
   job_id: string;
   payer_id: string;
@@ -149,6 +230,9 @@ export interface Payment {
   gateway: "stripe" | "mercado_pago" | "manual";
   gateway_payment_id: string | null;
   gateway_account_id: string | null;
+  gateway_charge_id: string | null;
+  gateway_transfer_id: string | null;
+  gateway_response: Record<string, unknown> | null;
   amount_cents: number;
   platform_fee_cents: number;
   professional_payout_cents: number;
@@ -156,21 +240,23 @@ export interface Payment {
   status: string;
   payment_method: string | null;
   installments: number | null;
-  refund_amount_cents: number | null;
+  refunded_amount_cents: number | null;
   refund_reason: string | null;
   refunded_at: string | null;
+  refunded_by: string | null;
+  released_at: string | null;
+  released_by: string | null;
   authorized_at: string | null;
   captured_at: string | null;
-  released_at: string | null;
   failed_at: string | null;
   failure_code: string | null;
-  failure_message: string | null;
+  failure_reason: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface ServiceCatalog {
+export type ServiceCatalog = {
   id: string;
   code: string;
   category: string;
@@ -185,9 +271,9 @@ export interface ServiceCatalog {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Notification {
+export type Notification = {
   id: string;
   user_id: string;
   type: string;
@@ -202,9 +288,9 @@ export interface Notification {
   sent_at: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
-}
+};
 
-export interface Message {
+export type Message = {
   id: string;
   job_id: string;
   sender_id: string;
@@ -215,9 +301,9 @@ export interface Message {
   read_by: string[] | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
-}
+};
 
-export interface Review {
+export type Review = {
   id: string;
   job_id: string;
   reviewer_id: string;
@@ -230,10 +316,89 @@ export interface Review {
   nps_score: number | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface UserRole {
+export type UserRole = {
   id: string;
   user_id: string;
   role: AppRole;
-}
+};
+
+export type ProfessionalCertificate = {
+  id: string;
+  profile_id: string;
+  title: string;
+  issuer: string;
+  issued_year: number | null;
+  file_url: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfessionalPortfolio = {
+  id: string;
+  profile_id: string;
+  title: string;
+  description: string | null;
+  image_url: string;
+  service_category: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfessionalSkill = {
+  id: string;
+  profile_id: string;
+  skill_name: string;
+  skill_level: string;
+  years_exp: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Dispute = {
+  id: string;
+  payment_id: string;
+  job_id: string;
+  opened_by: string;
+  type: string;
+  reason: string;
+  status: DisputeStatus;
+  amount_cents: number;
+  description: string | null;
+  gateway_dispute_id: string | null;
+  evidence_due_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TypingIndicator = {
+  id: string;
+  job_id: string;
+  user_id: string;
+  is_typing: boolean;
+  updated_at: string;
+};
+
+export type AuditLog = {
+  id: string;
+  actor_id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  changes: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type WebhookEvent = {
+  id: string;
+  gateway: string;
+  event_id: string;
+  event_type: string;
+  payload: Record<string, unknown> | null;
+  status: string;
+  processed_at: string | null;
+  error_message: string | null;
+  created_at: string;
+};
