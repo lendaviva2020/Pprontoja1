@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, AlertTriangle, ExternalLink, RefreshCw, CreditCard, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,14 @@ interface AccountStatus {
 }
 
 export default function StripeConnectPage() {
+  return (
+    <Suspense>
+      <StripeConnectContent />
+    </Suspense>
+  );
+}
+
+function StripeConnectContent() {
   const params = useSearchParams();
   const isRefresh = params.get("refresh") === "true";
   const [status, setStatus] = useState<AccountStatus | null>(null);

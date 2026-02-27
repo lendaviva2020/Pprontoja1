@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Plus, ClipboardList, MessageSquare, Star, LogOut, Zap, Menu, X } from "lucide-react";
+import { LayoutDashboard, Plus, ClipboardList, MessageSquare, Star, LogOut, Zap, Menu, X, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
@@ -12,6 +12,7 @@ const links = [
   { href: "/cliente/jobs/novo", label: "Solicitar serviço", icon: Plus },
   { href: "/cliente/jobs", label: "Meus pedidos", icon: ClipboardList },
   { href: "/cliente/mensagens", label: "Mensagens", icon: MessageSquare },
+  { href: "/cliente/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 interface Props {

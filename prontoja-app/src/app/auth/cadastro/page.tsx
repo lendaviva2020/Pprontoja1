@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -21,6 +21,14 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function CadastroPage() {
+  return (
+    <Suspense>
+      <CadastroContent />
+    </Suspense>
+  );
+}
+
+function CadastroContent() {
   const router = useRouter();
   const params = useSearchParams();
   const tipoParam = params.get("tipo") as "cliente" | "profissional" | null;

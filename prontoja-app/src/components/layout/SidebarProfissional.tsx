@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Search, FileText, DollarSign, Star, LogOut, Zap, Menu, X, ToggleLeft, ToggleRight, User, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Search, FileText, DollarSign, Star, LogOut, Zap, Menu, X, ToggleLeft, ToggleRight, User, MessageSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
@@ -16,6 +16,7 @@ const links = [
   { href: "/profissional/mensagens", label: "Mensagens", icon: MessageSquare },
   { href: "/profissional/financeiro", label: "Financeiro", icon: DollarSign },
   { href: "/profissional/perfil", label: "Meu Perfil", icon: User },
+  { href: "/profissional/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 interface Props {
