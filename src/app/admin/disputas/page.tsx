@@ -5,10 +5,27 @@ import { AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import DisputeActionButton from "@/components/admin/DisputeActionButton";
 
+type DisputeStatus = "open" | "under_review" | "resolved_pro_platform" | "resolved_pro_client" | "closed";
+
+interface DisputeRow {
+  id: string;
+  type: string;
+  reason: string;
+  status: DisputeStatus;
+  amount_cents: number;
+  description: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  evidence_due_by: string | null;
+  gateway_dispute_id: string | null;
+  job: { title?: string; status?: string } | { title?: string; status?: string }[];
+  opened_by_user: { full_name?: string } | { full_name?: string }[];
+}
+
 export default async function AdminDisputasPage() {
   const supabase = createServiceClient();
 
-  const { data: disputes } = await supabase
+  const { data } = await supabase
     .from("disputes")
     .select(`
       id, type, reason, status, amount_cents, description,
@@ -20,7 +37,9 @@ export default async function AdminDisputasPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  const disputes = (data ?? null) as DisputeRow[] | null;
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode | null }> = {
     open: {
       label: "Aberta",
       color: "bg-red-100 text-red-700 border border-red-200",

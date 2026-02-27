@@ -3,6 +3,11 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import { Star, MessageSquare, TrendingUp } from "lucide-react";
 import ProfessionalReviewResponse from "@/components/reviews/ProfessionalReviewResponse";
+import type { Review, Profile } from "@/types/database";
+
+type Reviewer = { id: string; display_name: string | null; full_name: string; avatar_url: string | null };
+type JobRef = { id: string; title: string };
+type ReviewWithRelations = Review & { reviewer: Reviewer | null; job: JobRef | null };
 
 export default async function AvaliacoesProfissionalPage() {
   const supabase = await createClient();
@@ -11,7 +16,7 @@ export default async function AvaliacoesProfissionalPage() {
 
   const service = createServiceClient();
 
-  const { data: reviews } = await service
+  const { data: reviewsData } = await service
     .from("reviews")
     .select(`
       *,
@@ -22,19 +27,22 @@ export default async function AvaliacoesProfissionalPage() {
     .eq("is_visible", true)
     .order("created_at", { ascending: false });
 
-  const { data: profile } = await service
+  const reviews = (reviewsData ?? []) as ReviewWithRelations[];
+
+  const { data: profileData } = await service
     .from("profiles")
     .select("rating_avg, rating_count")
     .eq("id", user.id)
     .single();
 
-  const avgRating = profile?.rating_avg ? Number(profile.rating_avg) : 0;
-  const totalReviews = profile?.rating_count || 0;
+  const profile = profileData as Pick<Profile, "rating_avg" | "rating_count"> | null;
+  const avgRating = profile?.rating_avg != null ? Number(profile.rating_avg) : 0;
+  const totalReviews = profile?.rating_count ?? 0;
 
   // Calcular distribuição de notas
-  const dist = [5,4,3,2,1].map(r => ({
+  const dist = [5, 4, 3, 2, 1].map((r) => ({
     rating: r,
-    count: reviews?.filter((rv: { rating: number }) => rv.rating === r).length || 0,
+    count: reviews.filter((rv) => rv.rating === r).length,
   }));
 
   return (

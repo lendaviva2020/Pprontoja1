@@ -46,7 +46,7 @@ export default function ChatBox({ jobId, currentUserId, otherUser, jobTitle, job
   const [otherTyping, setOtherTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const typingTimerRef = useRef<NodeJS.Timeout>();
+  const typingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Carregar mensagens
   useEffect(() => {
@@ -67,30 +67,34 @@ export default function ChatBox({ jobId, currentUserId, otherUser, jobTitle, job
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Realtime - escutar novas mensagens
+  // Realtime - escutar novas mensagens e indicador de digitação (um canal por tipo para as sobrecargas do Supabase)
   useEffect(() => {
-    const channel = supabase
-      .channel(`chat:${jobId}`)
+    type PostgresPayload<T = Record<string, unknown>> = { new: T; old: T; eventType: string };
+    const channelMessages = supabase
+      .channel(`chat:${jobId}:messages`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `job_id=eq.${jobId}` },
-        (payload) => {
-          const newMsg = payload.new as Message;
+        (payload: PostgresPayload<Message>) => {
+          const newMsg = payload.new;
           if (newMsg.sender_id !== currentUserId) {
             setMessages((prev) => {
               if (prev.find((m) => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
-            // Marcar como lida
             fetch(`/api/chat/${jobId}`, { method: "GET" });
           }
         }
       )
+      .subscribe();
+
+    const channelTyping = supabase
+      .channel(`chat:${jobId}:typing`)
       .on(
         "postgres_changes",
         { event: "UPSERT", schema: "public", table: "typing_indicators", filter: `job_id=eq.${jobId}` },
-        (payload) => {
-          const data = payload.new as { user_id: string; is_typing: boolean };
+        (payload: PostgresPayload<{ user_id: string; is_typing: boolean }>) => {
+          const data = payload.new;
           if (data.user_id !== currentUserId) {
             setOtherTyping(data.is_typing);
           }
@@ -98,7 +102,10 @@ export default function ChatBox({ jobId, currentUserId, otherUser, jobTitle, job
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channelMessages);
+      supabase.removeChannel(channelTyping);
+    };
   }, [jobId, currentUserId]);
 
   // Indicador "digitando"

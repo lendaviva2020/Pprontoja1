@@ -3,10 +3,23 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import { CheckCircle, AlertTriangle, Clock, ExternalLink } from "lucide-react";
 
+type AdminProfessionalRow = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  is_available: boolean | null;
+  user_status: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  user_roles: { role: string } | { role: string }[] | null;
+};
+
 export default async function AdminProfissionaisPage() {
   const supabase = createServiceClient();
 
-  const { data: professionals } = await supabase
+  const { data: professionalsData } = await supabase
     .from("profiles")
     .select(`
       id, full_name, email, rating_avg, rating_count,
@@ -17,13 +30,17 @@ export default async function AdminProfissionaisPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
+  const professionals = (professionalsData ?? []) as AdminProfessionalRow[];
+
   // Buscar totais pagos por profissional
-  const { data: paymentTotals } = await supabase
+  const { data: paymentTotalsData } = await supabase
     .from("payments")
     .select("payee_id, professional_payout_cents, status")
     .in("status", ["released_to_professional", "captured"]);
 
-  const paymentMap = (paymentTotals ?? []).reduce<Record<string, { released: number; pending: number }>>((acc, p) => {
+  type PaymentTotalRow = { payee_id: string; professional_payout_cents: number; status: string };
+  const paymentTotals = (paymentTotalsData ?? []) as PaymentTotalRow[];
+  const paymentMap = paymentTotals.reduce<Record<string, { released: number; pending: number }>>((acc, p) => {
     if (!acc[p.payee_id]) acc[p.payee_id] = { released: 0, pending: 0 };
     if (p.status === "released_to_professional") acc[p.payee_id].released += p.professional_payout_cents;
     else acc[p.payee_id].pending += p.professional_payout_cents;
@@ -45,16 +62,16 @@ export default async function AdminProfissionaisPage() {
   };
 
   const totals = {
-    active: professionals?.filter(p => getStripeStatus((p.metadata as any) || {}) === "active").length ?? 0,
-    pending: professionals?.filter(p => getStripeStatus((p.metadata as any) || {}) === "pending").length ?? 0,
-    not_started: professionals?.filter(p => getStripeStatus((p.metadata as any) || {}) === "not_started").length ?? 0,
+    active: professionals.filter(p => getStripeStatus((p.metadata as Record<string, unknown>) || {}) === "active").length,
+    pending: professionals.filter(p => getStripeStatus((p.metadata as Record<string, unknown>) || {}) === "pending").length,
+    not_started: professionals.filter(p => getStripeStatus((p.metadata as Record<string, unknown>) || {}) === "not_started").length,
   };
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Profissionais</h1>
-        <p className="text-gray-500 mt-1">{professionals?.length} profissionais cadastrados</p>
+        <p className="text-gray-500 mt-1">{professionals.length} profissionais cadastrados</p>
       </div>
 
       {/* Status geral */}
@@ -88,8 +105,8 @@ export default async function AdminProfissionaisPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {professionals?.map(prof => {
-                const meta = (prof.metadata as Record<string, any>) || {};
+              {professionals.map(prof => {
+                const meta = (prof.metadata as Record<string, unknown>) || {};
                 const stripeStatus = getStripeStatus(meta);
                 const statusConfig = STRIPE_STATUS[stripeStatus as keyof typeof STRIPE_STATUS];
                 const payments = paymentMap[prof.id] || { released: 0, pending: 0 };
@@ -114,9 +131,9 @@ export default async function AdminProfissionaisPage() {
                           {statusConfig.icon}
                           {statusConfig.label}
                         </span>
-                        {meta.stripe_account_id && (
+                        {(meta.stripe_account_id as string | undefined) && (
                           <a
-                            href={`https://dashboard.stripe.com/connect/accounts/${meta.stripe_account_id}`}
+                            href={`https://dashboard.stripe.com/connect/accounts/${meta.stripe_account_id as string}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-brand-500"
@@ -125,8 +142,8 @@ export default async function AdminProfissionaisPage() {
                           </a>
                         )}
                       </div>
-                      {meta.stripe_account_id && (
-                        <p className="mt-0.5 font-mono text-xs text-gray-400">{meta.stripe_account_id}</p>
+                      {(meta.stripe_account_id as string | undefined) && (
+                        <p className="mt-0.5 font-mono text-xs text-gray-400">{String(meta.stripe_account_id)}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-green-600">
@@ -136,10 +153,10 @@ export default async function AdminProfissionaisPage() {
                       {formatCurrency(payments.pending)}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {prof.rating_avg ? (
+                      {prof.rating_avg != null ? (
                         <span className="font-medium text-gray-800">
                           ⭐ {Number(prof.rating_avg).toFixed(1)}
-                          <span className="text-xs text-gray-400 ml-1">({prof.rating_count})</span>
+                          <span className="text-xs text-gray-400 ml-1">({prof.rating_count ?? 0})</span>
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">Sem avaliações</span>

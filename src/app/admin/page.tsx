@@ -12,13 +12,18 @@ export default async function AdminDashboardPage() {
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
 
+  type PaymentSummaryRow = { amount_cents: number; platform_fee_cents: number | null; status: string };
+  type DisputeRow = { id: string; status: string; amount_cents: number };
+  type PendingReleaseRow = { id: string; amount_cents: number; professional_payout_cents: number; created_at: string; job_id: string; payee_id: string };
+  type RecentPaymentRow = { id: string; amount_cents: number; platform_fee_cents: number | null; status: string; created_at: string; job_id: string; payer_id: string; payee_id: string };
+
   const [
-    { data: payments },
-    { data: paymentsLastMonth },
-    { data: disputes },
-    { data: pendingReleases },
+    { data: paymentsData },
+    { data: paymentsLastMonthData },
+    { data: disputesData },
+    { data: pendingReleasesData },
     { data: professionals },
-    { data: recentPayments },
+    { data: recentPaymentsData },
   ] = await Promise.all([
     // Este mês
     supabase.from("payments")
@@ -42,6 +47,12 @@ export default async function AdminDashboardPage() {
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
+
+  const payments = (paymentsData ?? null) as PaymentSummaryRow[] | null;
+  const paymentsLastMonth = (paymentsLastMonthData ?? null) as PaymentSummaryRow[] | null;
+  const disputes = (disputesData ?? null) as DisputeRow[] | null;
+  const pendingReleases = (pendingReleasesData ?? null) as PendingReleaseRow[] | null;
+  const recentPayments = (recentPaymentsData ?? null) as RecentPaymentRow[] | null;
 
   const grossMRR = payments?.filter(p => p.status !== "refunded" && p.status !== "failed")
     .reduce((s, p) => s + p.amount_cents, 0) ?? 0;
@@ -162,7 +173,7 @@ export default async function AdminDashboardPage() {
                   </span>
                   <div className="text-right">
                     <p className="text-sm font-bold text-gray-900">{formatCurrency(p.amount_cents)}</p>
-                    <p className="text-xs text-brand-600">+{formatCurrency(p.platform_fee_cents)}</p>
+                    <p className="text-xs text-brand-600">+{formatCurrency(p.platform_fee_cents ?? 0)}</p>
                   </div>
                 </div>
               </Link>

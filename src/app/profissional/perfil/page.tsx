@@ -3,6 +3,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Edit, Star, Award, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
+import type { Profile, ProfessionalSkill, ProfessionalCertificate, ProfessionalPortfolioItem } from "@/types/database";
+
+type ProfileWithRelations = Profile & {
+  professional_skills: ProfessionalSkill[] | null;
+  professional_certificates: ProfessionalCertificate[] | null;
+  professional_portfolio: ProfessionalPortfolioItem[] | null;
+};
 
 export default async function PerfilProfissionalPage() {
   const supabase = await createClient();
@@ -10,12 +17,13 @@ export default async function PerfilProfissionalPage() {
   if (!user) redirect("/auth/login");
 
   const service = createServiceClient();
-  const { data: profile } = await service
+  const { data: profileData } = await service
     .from("profiles")
     .select(`*, professional_skills (*), professional_certificates (*), professional_portfolio (*)`)
     .eq("id", user.id)
     .single();
 
+  const profile = profileData as ProfileWithRelations | null;
   if (!profile) redirect("/profissional/dashboard");
 
   const completeness = profile.profile_completeness || 0;
@@ -74,13 +82,13 @@ export default async function PerfilProfissionalPage() {
           </div>
         </div>
 
-        {profile.professional_skills?.length > 0 && (
+        {(profile.professional_skills?.length ?? 0) > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {profile.professional_skills.slice(0, 8).map((s: { id: string; skill_name: string }) => (
+            {(profile.professional_skills ?? []).slice(0, 8).map((s) => (
               <span key={s.id} className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{s.skill_name}</span>
             ))}
-            {profile.professional_skills.length > 8 && (
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-400">+{profile.professional_skills.length - 8} mais</span>
+            {(profile.professional_skills?.length ?? 0) > 8 && (
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-400">+{(profile.professional_skills?.length ?? 0) - 8} mais</span>
             )}
           </div>
         )}

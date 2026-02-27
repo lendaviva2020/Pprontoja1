@@ -62,15 +62,36 @@ export default async function AdminPagamentosPage({ searchParams }: Props) {
 
   if (status) query = query.eq("status", status);
 
-  const { data: payments, count } = await query;
+  const { data: paymentsData, count } = await query;
+  type PaymentRow = {
+    id: string;
+    amount_cents: number;
+    platform_fee_cents: number;
+    professional_payout_cents: number;
+    status: string;
+    gateway: string;
+    gateway_payment_id: string | null;
+    created_at: string;
+    captured_at: string | null;
+    released_at: string | null;
+    job_id: string;
+    payer_id: string;
+    payee_id: string;
+    currency: string;
+    refunded_amount_cents: number | null;
+    failure_reason: string | null;
+  };
+  const payments = (paymentsData ?? null) as PaymentRow[] | null;
   const totalPages = Math.ceil((count ?? 0) / pageSize);
 
   // Totais por status (resumo)
-  const { data: summary } = await supabase
+  const { data: summaryData } = await supabase
     .from("payments")
     .select("status, amount_cents, platform_fee_cents");
 
-  const grouped = (summary ?? []).reduce<Record<string, { count: number; total: number; fees: number }>>((acc, p) => {
+  type SummaryRow = { status: string; amount_cents: number; platform_fee_cents: number | null };
+  const summary = (summaryData ?? []) as SummaryRow[];
+  const grouped = summary.reduce<Record<string, { count: number; total: number; fees: number }>>((acc, p) => {
     if (!acc[p.status]) acc[p.status] = { count: 0, total: 0, fees: 0 };
     acc[p.status].count++;
     acc[p.status].total += p.amount_cents;
@@ -162,8 +183,8 @@ export default async function AdminPagamentosPage({ searchParams }: Props) {
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900">
                     {formatCurrency(p.amount_cents)}
-                    {p.refunded_amount_cents > 0 && (
-                      <p className="text-xs text-orange-500">-{formatCurrency(p.refunded_amount_cents)}</p>
+                    {(p.refunded_amount_cents ?? 0) > 0 && (
+                      <p className="text-xs text-orange-500">-{formatCurrency(p.refunded_amount_cents ?? 0)}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-brand-600 font-medium">

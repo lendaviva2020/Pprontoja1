@@ -5,6 +5,12 @@ import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 
+type ClientRef = { id: string; display_name: string | null; full_name: string; avatar_url: string | null };
+type JobWithClient = { id: string; title: string; status: string; updated_at: string; client: ClientRef | ClientRef[] | null };
+type MsgRow = { body: string | null; created_at: string; sender_id: string; is_read: boolean };
+type LastMsgRow = { content: string | null; created_at: string; sender_id: string; is_read: boolean };
+type JobWithLastMessage = JobWithClient & { lastMsg: LastMsgRow | null; unreadCount: number };
+
 export default async function ProfissionalMensagensPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -12,7 +18,7 @@ export default async function ProfissionalMensagensPage() {
 
   const service = createServiceClient();
 
-  const { data: jobs } = await service
+  const { data: jobsData } = await service
     .from("jobs")
     .select(`
       id, title, status, updated_at,
@@ -22,15 +28,22 @@ export default async function ProfissionalMensagensPage() {
     .in("status", ["accepted", "in_progress", "pending_review", "completed"])
     .order("updated_at", { ascending: false });
 
-  const jobsWithLastMessage = await Promise.all(
-    (jobs || []).map(async (job) => {
-      const { data: lastMsg } = await service
+  const jobs = (jobsData ?? []) as JobWithClient[];
+
+  const jobsWithLastMessage: JobWithLastMessage[] = await Promise.all(
+    jobs.map(async (job) => {
+      const { data: lastMsgData } = await service
         .from("messages")
-        .select("content, created_at, sender_id, is_read")
+        .select("body, created_at, sender_id, is_read")
         .eq("job_id", job.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      const lastMsg = lastMsgData as MsgRow | null;
+      const lastMsgRow: LastMsgRow | null = lastMsg
+        ? { content: lastMsg.body, created_at: lastMsg.created_at, sender_id: lastMsg.sender_id, is_read: lastMsg.is_read }
+        : null;
 
       const { count: unread } = await service
         .from("messages")
@@ -39,7 +52,7 @@ export default async function ProfissionalMensagensPage() {
         .eq("is_read", false)
         .neq("sender_id", user.id);
 
-      return { ...job, lastMsg, unreadCount: unread || 0 };
+      return { ...job, lastMsg: lastMsgRow, unreadCount: unread ?? 0 };
     })
   );
 
@@ -58,16 +71,16 @@ export default async function ProfissionalMensagensPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {jobsWithLastMessage.map(job => {
-            const client = Array.isArray(job.client) ? job.client[0] : job.client as any;
-            const clientName = client?.display_name || client?.full_name || "Cliente";
+          {jobsWithLastMessage.map((job: JobWithLastMessage) => {
+            const client: ClientRef | null = Array.isArray(job.client) ? job.client[0] ?? null : job.client;
+            const clientName = client?.display_name ?? client?.full_name ?? "Cliente";
             return (
               <Link key={job.id} href={`/chat/${job.id}`} className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm border border-gray-100 hover:border-brand-200 hover:shadow-md transition-all group">
                 <div className="relative flex-shrink-0">
                   <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm">
                     {client?.avatar_url
                       ? <img src={client.avatar_url} alt={clientName} className="h-full w-full object-cover" />
-                      : <div className="h-full w-full flex items-center justify-center text-lg font-bold text-gray-400">{clientName[0].toUpperCase()}</div>}
+                      : <div className="h-full w-full flex items-center justify-center text-lg font-bold text-gray-400">{(clientName[0] ?? "?").toUpperCase()}</div>}
                   </div>
                   {job.unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{job.unreadCount}</span>
@@ -80,7 +93,7 @@ export default async function ProfissionalMensagensPage() {
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5 truncate">{job.title}</p>
                   <p className="text-sm text-gray-500 mt-0.5 truncate">
-                    {job.lastMsg ? (job.lastMsg.sender_id === user.id ? "Você: " : "") + job.lastMsg.content : "Sem mensagens ainda"}
+                    {job.lastMsg ? (job.lastMsg.sender_id === user.id ? "Você: " : "") + (job.lastMsg.content ?? "") : "Sem mensagens ainda"}
                   </p>
                 </div>
                 <svg className="h-5 w-5 text-gray-400 group-hover:text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>

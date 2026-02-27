@@ -63,6 +63,10 @@ export interface Profile {
   full_name: string;
   display_name: string | null;
   avatar_url: string | null;
+  headline: string | null;
+  slug: string | null;
+  profile_completeness: number | null;
+  verified_identity: boolean | null;
   phone_masked: string | null;
   phone_hash: string | null;
   cpf_masked: string | null;
@@ -83,6 +87,30 @@ export interface Profile {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProfessionalSkill {
+  id: string;
+  profile_id: string;
+  skill_name: string;
+  skill_level?: string;
+}
+
+export interface ProfessionalCertificate {
+  id: string;
+  profile_id: string;
+  title: string;
+  issuer: string;
+  issued_year?: number;
+  is_verified?: boolean;
+}
+
+export interface ProfessionalPortfolioItem {
+  id: string;
+  profile_id: string;
+  image_url?: string;
+  title: string;
+  description?: string;
 }
 
 export interface Job {
@@ -197,6 +225,7 @@ export interface Notification {
   action_url: string | null;
   reference_id: string | null;
   reference_type: string | null;
+  data: Record<string, unknown> | null;
   is_read: boolean;
   read_at: string | null;
   sent_at: string | null;
@@ -209,9 +238,12 @@ export interface Message {
   job_id: string;
   sender_id: string;
   body: string | null;
+  message_type: string | null;
   attachment_url: string | null;
   attachment_type: string | null;
   is_system: boolean;
+  is_read: boolean;
+  read_at: string | null;
   read_by: string[] | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
@@ -225,8 +257,15 @@ export interface Review {
   rating: number;
   comment: string | null;
   is_public: boolean;
+  is_visible: boolean | null;
   response: string | null;
   responded_at: string | null;
+  professional_response: string | null;
+  professional_responded_at: string | null;
+  would_hire_again: boolean | null;
+  punctuality_rating: number | null;
+  quality_rating: number | null;
+  communication_rating: number | null;
   nps_score: number | null;
   created_at: string;
   updated_at: string;
