@@ -15,7 +15,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarCliente user={{ email: user.email!, ...profile }} />
+      <SidebarCliente user={{ id: user.id, email: user.email!, ...profile }} />
       <main className="flex-1 lg:ml-64">
         <div className="p-4 lg:p-8">{children}</div>
       </main>

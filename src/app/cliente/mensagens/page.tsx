@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
@@ -10,10 +9,8 @@ export default async function ClienteMensagensPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const service = createServiceClient();
-
   // Buscar todos os jobs do cliente que têm mensagens (accepted, in_progress, completed)
-  const { data: jobs } = await service
+  const { data: jobs } = await supabase
     .from("jobs")
     .select(`
       id, title, status, updated_at,
@@ -26,7 +23,7 @@ export default async function ClienteMensagensPage() {
   // Para cada job, pegar última mensagem
   const jobsWithLastMessage = await Promise.all(
     (jobs || []).map(async (job) => {
-      const { data: lastMsg } = await service
+      const { data: lastMsg } = await supabase
         .from("messages")
         .select("content, created_at, sender_id, is_read")
         .eq("job_id", job.id)
@@ -34,7 +31,7 @@ export default async function ClienteMensagensPage() {
         .limit(1)
         .maybeSingle();
 
-      const { count: unread } = await service
+      const { count: unread } = await supabase
         .from("messages")
         .select("id", { count: "exact", head: true })
         .eq("job_id", job.id)

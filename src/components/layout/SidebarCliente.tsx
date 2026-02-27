@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Plus, ClipboardList, MessageSquare, Star, LogOut, Zap, Menu, X } from "lucide-react";
+import { LayoutDashboard, Plus, ClipboardList, MessageSquare, LogOut, Zap, Menu, X, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import NotificationBell from "@/components/NotificationBell";
 import { useState } from "react";
 
 const links = [
@@ -12,10 +13,11 @@ const links = [
   { href: "/cliente/jobs/novo", label: "Solicitar serviço", icon: Plus },
   { href: "/cliente/jobs", label: "Meus pedidos", icon: ClipboardList },
   { href: "/cliente/mensagens", label: "Mensagens", icon: MessageSquare },
+  { href: "/cliente/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 interface Props {
-  user: { email: string; full_name?: string; display_name?: string; avatar_url?: string | null };
+  user: { id: string; email: string; full_name?: string; display_name?: string; avatar_url?: string | null };
 }
 
 export default function SidebarCliente({ user }: Props) {
@@ -40,6 +42,9 @@ export default function SidebarCliente({ user }: Props) {
           <Zap className="h-4 w-4 text-white" />
         </div>
         <span className="text-lg font-bold text-gray-900">ProntoJá</span>
+        <div className="ml-auto">
+          <NotificationBell userId={user.id} notificationsHref="/cliente/notificacoes" />
+        </div>
       </div>
 
       <nav className="mt-4 flex-1 space-y-1 px-2">

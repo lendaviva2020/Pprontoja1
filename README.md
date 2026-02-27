@@ -250,6 +250,14 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 NEXT_PUBLIC_APP_URL=https://seudominio.com
 ```
 
+### Login com Google
+
+1. **Google Cloud Console**: Crie um projeto em [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID.
+2. **Authorized redirect URIs**: Adicione `https://[seu-projeto].supabase.co/auth/v1/callback`.
+3. **Supabase Dashboard**: Authentication → Providers → Google → habilite e cole Client ID e Client Secret.
+4. **Redirect URLs no Supabase**: Authentication → URL Configuration → adicione `http://localhost:3000/api/auth/callback` (dev) e `https://seudominio.com/api/auth/callback` (prod).
+5. **SUPABASE_SERVICE_ROLE_KEY**: Necessária para criar profile e role de novos usuários OAuth (já listada acima).
+
 ---
 
 ## Deploy

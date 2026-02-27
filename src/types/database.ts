@@ -1,58 +1,57 @@
-export type AppRole = "client" | "professional" | "org_admin" | "org_member" | "platform_admin";
+export type AppRole =
+  | "client"
+  | "professional"
+  | "org_admin"
+  | "org_member"
+  | "platform_admin"
+  | "admin"
+  | "super_admin"
+  | "finance"
+  | "support";
 export type JobStatus = "draft" | "open" | "matching" | "proposal_received" | "accepted" | "in_progress" | "pending_review" | "completed" | "disputed" | "cancelled";
 export type ProposalStatus = "pending" | "accepted" | "rejected" | "expired" | "withdrawn";
-export type PaymentStatus = "pending" | "authorized" | "captured" | "released_to_professional" | "refunded" | "disputed";
+export type PaymentStatus =
+  | "pending"
+  | "authorized"
+  | "captured"
+  | "released_to_professional"
+  | "released"
+  | "refunded"
+  | "partially_refunded"
+  | "disputed";
 export type UserStatus = "pending_verification" | "active" | "suspended" | "deactivated";
+
+type DbTable<Row extends Record<string, any> = Record<string, any>> = {
+  Row: Row;
+  Insert: Partial<Row> & Record<string, any>;
+  Update: Partial<Row> & Record<string, any>;
+  Relationships: [];
+};
 
 export interface Database {
   public: {
     Tables: {
-      profiles: {
-        Row: Profile;
-        Insert: Partial<Profile>;
-        Update: Partial<Profile>;
-      };
-      jobs: {
-        Row: Job;
-        Insert: Partial<Job>;
-        Update: Partial<Job>;
-      };
-      proposals: {
-        Row: Proposal;
-        Insert: Partial<Proposal>;
-        Update: Partial<Proposal>;
-      };
-      payments: {
-        Row: Payment;
-        Insert: Partial<Payment>;
-        Update: Partial<Payment>;
-      };
-      services_catalog: {
-        Row: ServiceCatalog;
-        Insert: Partial<ServiceCatalog>;
-        Update: Partial<ServiceCatalog>;
-      };
-      notifications: {
-        Row: Notification;
-        Insert: Partial<Notification>;
-        Update: Partial<Notification>;
-      };
-      messages: {
-        Row: Message;
-        Insert: Partial<Message>;
-        Update: Partial<Message>;
-      };
-      reviews: {
-        Row: Review;
-        Insert: Partial<Review>;
-        Update: Partial<Review>;
-      };
-      user_roles: {
-        Row: UserRole;
-        Insert: Partial<UserRole>;
-        Update: Partial<UserRole>;
-      };
+      profiles: DbTable<Profile>;
+      jobs: DbTable<Job>;
+      proposals: DbTable<Proposal>;
+      payments: DbTable<Payment>;
+      services_catalog: DbTable<ServiceCatalog>;
+      notifications: DbTable<Notification>;
+      messages: DbTable<Message>;
+      reviews: DbTable<Review>;
+      user_roles: DbTable<UserRole>;
+      professional_skills: DbTable<ProfessionalSkill>;
+      professional_certificates: DbTable<ProfessionalCertificate>;
+      professional_portfolio: DbTable<ProfessionalPortfolioItem>;
+      disputes: DbTable;
+      audit_logs: DbTable;
+      typing_indicators: DbTable;
+      webhook_events: DbTable;
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 

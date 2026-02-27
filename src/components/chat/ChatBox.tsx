@@ -72,9 +72,8 @@ export default function ChatBox({ jobId, currentUserId, otherUser, jobTitle, job
     type PostgresPayload<T = Record<string, unknown>> = { new: T; old: T; eventType: string };
     const channelMessages = supabase
       .channel(`chat:${jobId}:messages`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `job_id=eq.${jobId}` },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "messages", filter: `job_id=eq.${jobId}` },
         (payload: PostgresPayload<Message>) => {
           const newMsg = payload.new;
           if (newMsg.sender_id !== currentUserId) {
@@ -90,9 +89,8 @@ export default function ChatBox({ jobId, currentUserId, otherUser, jobTitle, job
 
     const channelTyping = supabase
       .channel(`chat:${jobId}:typing`)
-      .on(
-        "postgres_changes",
-        { event: "UPSERT", schema: "public", table: "typing_indicators", filter: `job_id=eq.${jobId}` },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on("postgres_changes" as any, { event: "UPSERT", schema: "public", table: "typing_indicators", filter: `job_id=eq.${jobId}` },
         (payload: PostgresPayload<{ user_id: string; is_typing: boolean }>) => {
           const data = payload.new;
           if (data.user_id !== currentUserId) {

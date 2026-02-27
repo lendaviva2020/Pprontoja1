@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                 <h1 className="text-2xl font-bold">{name}</h1>
                 {profile.verified_identity && (
-                  <CheckCircle className="h-5 w-5 text-blue-300" title="Identidade verificada" />
+                  <span title="Identidade verificada"><CheckCircle className="h-5 w-5 text-blue-300" /></span>
                 )}
               </div>
               {profile.headline && <p className="text-brand-200 text-lg">{profile.headline}</p>}

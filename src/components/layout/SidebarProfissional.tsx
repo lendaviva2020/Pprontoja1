@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Search, FileText, DollarSign, Star, LogOut, Zap, Menu, X, ToggleLeft, ToggleRight, User, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Search, FileText, DollarSign, Star, LogOut, Zap, Menu, X, ToggleLeft, ToggleRight, User, MessageSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import NotificationBell from "@/components/NotificationBell";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,10 +17,12 @@ const links = [
   { href: "/profissional/mensagens", label: "Mensagens", icon: MessageSquare },
   { href: "/profissional/financeiro", label: "Financeiro", icon: DollarSign },
   { href: "/profissional/perfil", label: "Meu Perfil", icon: User },
+  { href: "/profissional/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 interface Props {
   user: {
+    id: string;
     email: string;
     full_name?: string;
     display_name?: string;
@@ -64,7 +67,10 @@ export default function SidebarProfissional({ user }: Props) {
           <Zap className="h-4 w-4 text-white" />
         </div>
         <span className="text-lg font-bold text-gray-900">ProntoJá</span>
-        <span className="ml-auto text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium">Pro</span>
+        <span className="text-xs rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-700">Pro</span>
+        <div className="ml-auto">
+          <NotificationBell userId={user.id} notificationsHref="/profissional/notificacoes" />
+        </div>
       </div>
 
       {/* Toggle disponibilidade */}

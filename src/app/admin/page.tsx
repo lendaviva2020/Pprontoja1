@@ -127,10 +127,12 @@ export default async function AdminDashboardPage() {
             icon: AlertTriangle,
             color: "bg-red-50 text-red-600",
           },
-        ].map(card => (
+        ].map(card => {
+          const Icon = card.icon;
+          return (
           <div key={card.label} className="card p-5">
             <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-xl", card.color)}>
-              <card.icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{card.value}</p>
             <p className="text-sm text-gray-500">{card.label}</p>
@@ -144,7 +146,8 @@ export default async function AdminDashboardPage() {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
