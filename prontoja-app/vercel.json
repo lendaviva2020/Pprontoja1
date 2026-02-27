@@ -1,0 +1,22 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "regions": ["gru1"],
+  "headers": [
+    {
+      "source": "/api/stripe/webhook",
+      "headers": [
+        { "key": "x-webhook-route", "value": "stripe-main" }
+      ]
+    },
+    {
+      "source": "/api/stripe/webhook-connect",
+      "headers": [
+        { "key": "x-webhook-route", "value": "stripe-connect" }
+      ]
+    }
+  ]
+}
