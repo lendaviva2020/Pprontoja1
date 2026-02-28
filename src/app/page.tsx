@@ -74,7 +74,7 @@ export default async function HomePage() {
             <span className="text-xl font-bold text-gray-900">ProntoJá</span>
           </div>
           <nav className="hidden items-center gap-6 md:flex">
-            <Link href="#como-funciona" className="text-sm text-gray-600 hover:text-gray-900">Como funciona</Link>
+            <Link href="/como-funciona" className="text-sm text-gray-600 hover:text-gray-900">Como funciona</Link>
             <Link href="#servicos" className="text-sm text-gray-600 hover:text-gray-900">Serviços</Link>
             <Link href="/busca" className="text-sm text-gray-600 hover:text-gray-900">Buscar profissional</Link>
             <Link href="/auth/login" className="btn-secondary text-sm">Entrar</Link>
@@ -343,7 +343,7 @@ export default async function HomePage() {
                 <ul className="space-y-2 text-sm text-gray-500">
                   <li><Link href="/busca" className="hover:text-gray-900">Buscar profissionais</Link></li>
                   <li><Link href="/auth/cadastro" className="hover:text-gray-900">Criar conta</Link></li>
-                  <li><Link href="#como-funciona" className="hover:text-gray-900">Como funciona</Link></li>
+                  <li><Link href="/como-funciona" className="hover:text-gray-900">Como funciona</Link></li>
                 </ul>
               </div>
               <div>
