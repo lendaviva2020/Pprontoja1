@@ -3,6 +3,19 @@ import Link from "next/link";
 import { Search, Star, MapPin, Filter, Zap, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type ProfissionalBusca = {
+  id: string;
+  full_name?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  headline?: string | null;
+  location_city?: string | null;
+  rating_avg?: number | null;
+  rating_count?: number | null;
+  skills?: string[] | null;
+  slug?: string | null;
+};
+
 const CATEGORIAS = [
   { value: "limpeza", label: "Limpeza", emoji: "🧹" },
   { value: "eletrica", label: "Elétrica", emoji: "⚡" },
@@ -69,12 +82,13 @@ export default async function BuscaPage({
 
   const { data: profissionais } = await query.limit(24);
 
-  const filtered =
+  const filtered = (
     profissionais?.filter((p) => {
       if (!categoria) return true;
-      const skills = (p.skills as string[] | null) ?? [];
+      const skills = ((p as ProfissionalBusca).skills ?? []) as string[];
       return skills.some((s) => s.toLowerCase().includes(categoria));
-    }) ?? [];
+    }) ?? []
+  ) as ProfissionalBusca[];
 
   return (
     <div className="min-h-screen bg-gray-50">
