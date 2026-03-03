@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getStripe } from "@/lib/stripe";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const stripe = getStripe();
@@ -16,12 +19,13 @@ export async function POST(request: NextRequest) {
       signature,
       process.env.STRIPE_CONNECT_WEBHOOK_SECRET!
     );
-  } catch (err: any) {
-    console.error("Webhook signature inválida:", err.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Assinatura inválida";
+    console.error("Webhook signature inválida:", msg);
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // Idempotência
   const { data: existing } = await supabase
@@ -161,10 +165,11 @@ export async function POST(request: NextRequest) {
       .eq("gateway", "stripe_connect");
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Erro desconhecido";
     console.error("Erro ao processar webhook Connect:", err);
     await supabase.from("webhook_events")
-      .update({ status: "failed", error_message: err.message })
+      .update({ status: "failed", error_message: msg })
       .eq("event_id", event.id)
       .eq("gateway", "stripe_connect");
 
