@@ -7,6 +7,9 @@ const __dirname = path.dirname(__filename);
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
+  async rewrites() {
+    return [{ source: "/favicon.ico", destination: "/icon.png" }];
+  },
   images: {
     remotePatterns: [
       {

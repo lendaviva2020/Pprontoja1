@@ -1,3 +1,4 @@
+import { use } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -21,7 +22,7 @@ const SKILL_LEVEL_COLORS: Record<string, string> = {
 };
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const { slug } = use(params);
   const service = createServiceClient();
 
   const { data: profile } = await service

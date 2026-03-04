@@ -16,41 +16,34 @@ export default function PaymentButton({ jobId, amount }: Props) {
   async function handlePay() {
     setLoading(true);
     try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast.error("Faça login para continuar");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("supabase.auth.token") || ""}`,
+            "Authorization": `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ job_id: jobId, gateway: "stripe" }),
         }
       );
 
-      // Pegar token de session do Supabase
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const res2 = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ job_id: jobId, gateway: "stripe" }),
-        }
-      );
-
-      if (!res2.ok) {
-        const err = await res2.json();
-        throw new Error(err.error || "Erro ao criar pagamento");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || "Erro ao criar pagamento");
       }
 
-      const data = await res2.json();
+      const data = await res.json();
 
       if (data.client_secret) {
         // Redirecionar para página de checkout Stripe

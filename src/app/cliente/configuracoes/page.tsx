@@ -118,12 +118,28 @@ export default function ClienteConfiguracoesPage() {
     setLoading(false);
   }
 
-  function deleteAccount() {
+  async function deleteAccount() {
     const confirmed = window.confirm(
       "Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão perdidos."
     );
     if (!confirmed) return;
-    toast.info("Entre em contato com suporte@prontoja.com.br para solicitar a exclusão da conta.");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Erro ao excluir conta");
+        setLoading(false);
+        return;
+      }
+      await supabase.auth.signOut();
+      toast.success("Conta excluída. Cadastre-se agora como profissional.");
+      window.location.href = "/auth/cadastro?tipo=profissional";
+    } catch (e) {
+      toast.error("Erro ao excluir conta");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -241,15 +257,25 @@ export default function ClienteConfiguracoesPage() {
               { key: "payment_confirmed" as const, label: "Pagamento confirmado", desc: "Quando seu pagamento for processado" },
             ].map(({ key, label, desc }) => (
               <label key={key} className="flex items-start gap-4 cursor-pointer">
-                <div className="relative mt-0.5 flex-shrink-0">
+                <div
+                  className="relative mt-0.5 flex-shrink-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setNotifProps((prev) => ({ ...prev, [key]: !prev[key] }));
+                  }}
+                >
                   <input
                     type="checkbox"
                     className="sr-only"
                     checked={notifProps[key]}
                     onChange={(e) => setNotifProps((prev) => ({ ...prev, [key]: e.target.checked }))}
+                    tabIndex={-1}
+                    aria-hidden
                   />
                   <div
-                    onClick={() => setNotifProps((prev) => ({ ...prev, [key]: !prev[key] }))}
+                    role="switch"
+                    aria-checked={notifProps[key]}
                     className={cn(
                       "flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
                       notifProps[key] ? "bg-brand-600" : "bg-gray-200"

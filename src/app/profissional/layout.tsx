@@ -1,86 +1,75 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
-import SidebarCliente from "@/components/layout/SidebarCliente";
+import SidebarProfissional from "@/components/layout/SidebarProfissional";
 
 // ─── SEO ─────────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: {
-    template: "%s | ProntoJá — Área do Cliente",
-    default: "Área do Cliente | ProntoJá",
+    template: "%s | ProntoJá — Área do Profissional",
+    default: "Área do Profissional | ProntoJá",
   },
   description:
-    "Gerencie seus pedidos de serviço, acompanhe profissionais e controle seus pagamentos na ProntoJá.",
+    "Gerencie suas propostas, serviços, avaliações e pagamentos na ProntoJá.",
   robots: {
-    index: false, // área autenticada — não indexar
+    index: false,
     follow: false,
   },
 };
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-export default async function ClienteLayout({
+// ─── Layout área profissional ────────────────────────────────────────────────
+export default async function ProfissionalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
 
-  // 1) Verificar autenticação
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    redirect("/auth/login?redirectTo=/cliente/dashboard");
+    redirect("/auth/login?redirectTo=/profissional/dashboard");
   }
 
-  // 2) Verificar ROLE do usuário
-  //    Um profissional NÃO pode acessar a área do cliente
-  const { data: roles, error: roleError } = await supabase
+  // Verificar role: cliente não pode acessar área profissional
+  const { data: roleRow, error: roleError } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  // Se houve erro ao buscar roles ou o role é "professional", redireciona
   if (roleError) {
-    // Erro de banco → redirecionar para login com mensagem
     redirect("/auth/login?error=role_check_failed");
   }
 
-  const role = roles?.role;
-
-  if (role === "professional") {
-    // Profissional tentando acessar área de cliente → redirecionar para a dele
-    redirect("/profissional/dashboard");
+  if (roleRow?.role === "client") {
+    redirect("/cliente/dashboard");
   }
 
-  // Se não tem role ainda (cadastro muito recente / race condition),
-  // tratamos como cliente por padrão e deixamos passar
-  // O trigger do Supabase deve ter criado o role — se não criou, ok por ora.
-
-  // 3) Buscar dados do perfil para o sidebar
+  // Perfil para o sidebar (profissional precisa de is_available, rating)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, display_name")
+    .select("full_name, avatar_url, display_name, rating_avg, is_available")
     .eq("id", user.id)
     .single();
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarCliente
+      <SidebarProfissional
         user={{
           id: user.id,
           email: user.email!,
           full_name: profile?.full_name ?? null,
           display_name: profile?.display_name ?? null,
           avatar_url: profile?.avatar_url ?? null,
+          rating_avg: profile?.rating_avg ?? null,
+          is_available: profile?.is_available ?? true,
         }}
       />
-
-      {/* Conteúdo principal — empurrado pelo sidebar (lg:ml-64) */}
       <main className="flex-1 lg:ml-64 min-w-0">
         <div className="p-4 lg:p-8">{children}</div>
       </main>

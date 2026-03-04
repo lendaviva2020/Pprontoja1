@@ -1,3 +1,4 @@
+import { use } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -42,7 +43,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default async function AdminPagamentosPage({ searchParams }: Props) {
-  const { status, page: pageParam, search } = await searchParams;
+  const resolved = use(searchParams);
+  const { status, page: pageParam, search } = resolved;
   const page = parseInt(pageParam ?? "1");
   const pageSize = 20;
   const offset = (page - 1) * pageSize;

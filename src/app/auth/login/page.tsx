@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -21,8 +21,15 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const redirectTo = params.get("redirectTo") || null;
+  const errorParam = params.get("error");
   const [showPass, setShowPass] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    if (errorParam === "role_check_failed") {
+      toast.error("Não foi possível verificar seu tipo de conta. Tente novamente.");
+    }
+  }, [errorParam]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -36,17 +43,27 @@ function LoginForm() {
         : error.message);
       return;
     }
-    // Buscar role para redirecionar
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .limit(1);
-
-    const role = roles?.[0]?.role;
-    const dest = redirectTo || (role === "professional" ? "/profissional/dashboard" : "/cliente/dashboard");
+    // Buscar role via API (usa service_role, não depende de RLS)
+    let role: string | null = null;
+    try {
+      const res = await fetch("/api/me/role", { credentials: "include" });
+      if (res.ok) {
+        const json = await res.json();
+        role = json.role ?? null;
+      }
+    } catch {
+      // fallback: tenta ler do client (pode falhar por RLS)
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+        .limit(1);
+      role = roles?.[0]?.role ?? null;
+    }
+    // Se temos redirectTo (ex.: /profissional/dashboard), usamos; senão decidimos pelo role
+    const dest =
+      redirectTo ||
+      (role === "professional" ? "/profissional/dashboard" : "/cliente/dashboard");
     router.push(dest);
     router.refresh();
   }

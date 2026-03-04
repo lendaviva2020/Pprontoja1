@@ -1,3 +1,4 @@
+import { use } from "react";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Search, Star, MapPin, Filter, Zap, ChevronRight } from "lucide-react";
@@ -45,7 +46,7 @@ export default async function BuscaPage({
   searchParams: Promise<{ q?: string; categoria?: string; cidade?: string; rating?: string }>;
 }) {
   const supabase = await createClient();
-  const params = await searchParams;
+  const params = use(searchParams);
 
   const q = params.q ?? "";
   const categoria = params.categoria ?? "";

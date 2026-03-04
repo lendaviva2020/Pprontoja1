@@ -22,7 +22,10 @@ export const dynamic = "force-dynamic";
 //   - Se ainda NÃO TEM role → usa o ?tipo para criar, ou cai no /cliente/dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    new URL(request.url).origin;
 
   const code = searchParams.get("code");
   const tipo = searchParams.get("tipo") as "cliente" | "profissional" | null;
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
   if (!code) {
     console.error("[Auth callback] Código ausente na URL");
     return NextResponse.redirect(
-      `${origin}/auth/login?error=missing_code`
+      `${baseUrl}/auth/login?error=missing_code`
     );
   }
 
@@ -76,7 +79,7 @@ export async function GET(request: NextRequest) {
   if (error || !data.user) {
     console.error("[Auth callback] Erro ao trocar código:", error?.message);
     return NextResponse.redirect(
-      `${origin}/auth/login?error=auth_callback_failed`
+      `${baseUrl}/auth/login?error=auth_callback_failed`
     );
   }
 
@@ -130,7 +133,7 @@ export async function GET(request: NextRequest) {
             ? "/profissional/dashboard"
             : "/cliente/dashboard";
 
-        return NextResponse.redirect(`${origin}${dashboardDestino}`);
+        return NextResponse.redirect(`${baseUrl}${dashboardDestino}`);
       }
 
       // ── Usuário novo: criar o role baseado no ?tipo ──────────────────────
@@ -162,12 +165,12 @@ export async function GET(request: NextRequest) {
         destino = "/cliente/dashboard";
       }
 
-      return NextResponse.redirect(`${origin}${destino}`);
+      return NextResponse.redirect(`${baseUrl}${destino}`);
     } catch (err) {
       console.error("[Auth callback] Erro ao criar profile/role:", err);
       // Falha na criação do profile não deve bloquear o login
       // Redirecionar para home como fallback seguro
-      return NextResponse.redirect(`${origin}/`);
+      return NextResponse.redirect(`${baseUrl}/`);
     }
   }
 
@@ -181,14 +184,14 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (rolesFallback?.role === "professional") {
-    return NextResponse.redirect(`${origin}/profissional/dashboard`);
+    return NextResponse.redirect(`${baseUrl}/profissional/dashboard`);
   }
 
   if (rolesFallback?.role === "client") {
-    return NextResponse.redirect(`${origin}/cliente/dashboard`);
+    return NextResponse.redirect(`${baseUrl}/cliente/dashboard`);
   }
 
   // Sem role → ir para o next ou home
   const fallbackDest = next || "/";
-  return NextResponse.redirect(`${origin}${fallbackDest}`);
+  return NextResponse.redirect(`${baseUrl}${fallbackDest}`);
 }

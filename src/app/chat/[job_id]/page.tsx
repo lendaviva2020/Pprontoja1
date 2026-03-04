@@ -1,3 +1,4 @@
+import { use } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { redirect, notFound } from "next/navigation";
@@ -6,7 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 
 export default async function ChatPage({ params }: { params: Promise<{ job_id: string }> }) {
-  const { job_id } = await params;
+  const { job_id } = use(params);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
