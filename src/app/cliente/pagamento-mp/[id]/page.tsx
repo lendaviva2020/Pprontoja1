@@ -290,10 +290,9 @@ export default function PagamentoMPPage() {
           <div className="flex justify-between text-sm items-center">
             <span className="text-gray-500 flex items-center gap-1">
               Taxa de plataforma (10%)
-              <Info
-                className="h-3.5 w-3.5 text-gray-400 cursor-help"
-                title="Taxa pela intermediação do serviço"
-              />
+              <span title="Taxa pela intermediação do serviço">
+                <Info className="h-3.5 w-3.5 text-gray-400 cursor-help" />
+              </span>
             </span>
             <span className="text-gray-500 text-xs">R$ {feeFormatted}</span>
           </div>
