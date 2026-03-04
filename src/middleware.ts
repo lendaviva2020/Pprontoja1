@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         // Só alteramos a resposta — request.cookies é read-only no Edge (Vercel)
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -168,8 +168,12 @@ function applySecurityHeaders(response: NextResponse, pathname: string): NextRes
 
 function handleCors(request: NextRequest): NextResponse | null {
   const origin = request.headers.get("origin");
-  const isAllowed = !origin || ALLOWED_ORIGINS.includes(origin) || 
-    (process.env.NODE_ENV !== "production" && (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")));
+
+  const isAllowed =
+    !origin ||
+    ALLOWED_ORIGINS.includes(origin) ||
+    (process.env.NODE_ENV !== "production" &&
+      (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")));
 
   if (request.method === "OPTIONS") {
     const res = new NextResponse(null, { status: 204 });
@@ -186,9 +190,12 @@ function handleCors(request: NextRequest): NextResponse | null {
   if (origin && !isAllowed && process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Origin não permitida" }, { status: 403 });
   }
+
   return null;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
