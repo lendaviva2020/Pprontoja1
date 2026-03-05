@@ -1,9 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// ─── Rotas públicas (não exigem autenticação) ─────────────────────────────────
 const PUBLIC_PATHS = ["/", "/busca", "/sobre", "/termos", "/privacidade"];
-
 const PUBLIC_PREFIXES = [
   "/auth/",
   "/_next",
@@ -29,6 +27,7 @@ const ALLOWED_ORIGINS = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Webhooks: apenas POST
   if (WEBHOOK_ROUTES.some((r) => pathname.startsWith(r))) {
     if (request.method !== "POST") {
       return new NextResponse("Method Not Allowed", { status: 405 });
@@ -36,6 +35,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next({ request }), pathname);
   }
 
+  // CORS para APIs
   if (pathname.startsWith("/api/")) {
     const corsResult = handleCors(request);
     if (corsResult) return corsResult;
@@ -51,7 +51,6 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        // Só alteramos a resposta — request.cookies é read-only no Edge (Vercel)
         setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -70,6 +69,9 @@ export async function middleware(request: NextRequest) {
     PUBLIC_PATHS.includes(pathname) ||
     PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
+  // ============================================================
+  // CORREÇÃO 1: Redirecionar não autenticados APENAS se não for público
+  // ============================================================
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
@@ -77,36 +79,48 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (pathname === "/auth/login" || pathname === "/auth/cadastro")) {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .limit(1);
+  // ============================================================
+  // CORREÇÃO 2: NÃO redirecionar automaticamente de /auth/login
+  // Deixar o componente de login fazer o redirecionamento correto
+  // ============================================================
+  // REMOVIDO: O bloco que redirecionava de /auth/login automaticamente
 
-    const role = roles?.[0]?.role;
-
-    if (role === "professional") {
-      return NextResponse.redirect(new URL("/profissional/dashboard", request.url));
-    }
-    return NextResponse.redirect(new URL("/cliente/dashboard", request.url));
-  }
-
+  // ============================================================
+  // CORREÇÃO 3: Proteção de áreas COM service role key
+  // ============================================================
   if (user) {
-    const inClientArea       = pathname.startsWith("/cliente");
+    const inClientArea = pathname.startsWith("/cliente");
     const inProfessionalArea = pathname.startsWith("/profissional");
-    const inAdminArea        = pathname.startsWith("/admin");
+    const inAdminArea = pathname.startsWith("/admin");
 
     if (inClientArea || inProfessionalArea || inAdminArea) {
-      const { data: roles } = await supabase
+      // USAR SERVICE KEY PARA GARANTIR ACESSO
+      const serviceSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll() {},
+          },
+        }
+      );
+
+      const { data: roleData } = await serviceSupabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
-      const role = roles?.[0]?.role;
-      const isAdmin = ["admin", "super_admin", "platform_admin"].includes(role ?? "");
+      const role = roleData?.role;
 
+      // Admin roles
+      const isAdmin = ["admin", "super_admin", "platform_admin", "finance", "support"].includes(role ?? "");
+
+      // Redirecionar se estiver na área errada
       if (inClientArea && role === "professional") {
         return NextResponse.redirect(new URL("/profissional/dashboard", request.url));
       }
