@@ -36,36 +36,110 @@ function LoginForm() {
   });
 
   async function onSubmit(data: FormData) {
-    const { error } = await supabase.auth.signInWithPassword(data);
-    if (error) {
-      toast.error(error.message === "Invalid login credentials"
-        ? "E-mail ou senha incorretos"
-        : error.message);
-      return;
-    }
-    // Buscar role via API (usa service_role, não depende de RLS)
-    let role: string | null = null;
     try {
-      const res = await fetch("/api/me/role", { credentials: "include" });
-      if (res.ok) {
-        const json = await res.json();
-        role = json.role ?? null;
+      // ============================================================
+      // CORREÇÃO 4: Login com tratamento de erro robusto
+      // ============================================================
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (signInError) {
+        toast.error(
+          signInError.message === "Invalid login credentials"
+            ? "E-mail ou senha incorretos"
+            : signInError.message
+        );
+        return;
       }
-    } catch {
-      // fallback: tenta ler do client (pode falhar por RLS)
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
-        .limit(1);
-      role = roles?.[0]?.role ?? null;
+
+      // ============================================================
+      // CORREÇÃO 5: Buscar role via API com retry
+      // ============================================================
+      let role: string | null = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts && !role) {
+        try {
+          const res = await fetch("/api/me/role", {
+            credentials: "include",
+            cache: "no-store",
+          });
+
+          if (res.ok) {
+            const json = await res.json();
+            role = json.role ?? null;
+          }
+
+          if (!role && attempts < maxAttempts - 1) {
+            // Aguardar 500ms antes de tentar novamente
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        } catch (err) {
+          console.error(`Tentativa ${attempts + 1} falhou:`, err);
+        }
+
+        attempts++;
+      }
+
+      // ============================================================
+      // CORREÇÃO 6: Fallback caso API falhe
+      // ============================================================
+      if (!role) {
+        console.warn("API falhou, tentando buscar role diretamente do Supabase");
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userData.user.id)
+            .limit(1)
+            .maybeSingle();
+
+          role = roleData?.role ?? null;
+        }
+      }
+
+      // ============================================================
+      // CORREÇÃO 7: Redirecionamento com fallback
+      // ============================================================
+      let destination: string;
+
+      if (redirectTo) {
+        // Se tem redirectTo, usar ele
+        destination = redirectTo;
+      } else if (role === "professional") {
+        destination = "/profissional/dashboard";
+      } else if (role === "client") {
+        destination = "/cliente/dashboard";
+      } else if (["admin", "super_admin", "finance", "support"].includes(role || "")) {
+        destination = "/admin";
+      } else {
+        // Fallback: tentar deduzir pela primeira tentativa
+        console.warn("Role não identificado, usando fallback");
+        destination = "/cliente/dashboard";
+      }
+
+      console.log("Redirecionando para:", destination);
+
+      // ============================================================
+      // CORREÇÃO 8: Router.push com window.location como fallback
+      // ============================================================
+      router.push(destination);
+      router.refresh();
+
+      // Fallback: se router.push falhar, usar window.location
+      setTimeout(() => {
+        if (window.location.pathname !== destination) {
+          window.location.href = destination;
+        }
+      }, 1000);
+    } catch (err) {
+      console.error("Erro no login:", err);
+      toast.error("Erro ao fazer login. Tente novamente.");
     }
-    // Se temos redirectTo (ex.: /profissional/dashboard), usamos; senão decidimos pelo role
-    const dest =
-      redirectTo ||
-      (role === "professional" ? "/profissional/dashboard" : "/cliente/dashboard");
-    router.push(dest);
-    router.refresh();
   }
 
   return (
@@ -138,7 +212,13 @@ function LoginForm() {
               disabled={isSubmitting}
               className="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Entrando...</> : "Entrar"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
             </button>
           </form>
 
@@ -156,11 +236,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );
